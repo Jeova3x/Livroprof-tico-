@@ -859,87 +859,88 @@
 </script>
     
   <script>
-/* Isola o código para evitar conflitos com variáveis/funções existentes */
+
+
+
 (function(window, document){
-  const NAMESPACE = 'AudiobookData';
+  const NS = 'AudiobookData';
+  if (window[NS]) return;
+  window[NS] = { loaded: false, chapters: [] };
 
-  // evita sobrescrever se já existir (por segurança)
-  if (window[NAMESPACE]) return;
+  function escapeHtml(s){ return String(s||'')
+    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+    .replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
 
-  window[NAMESPACE] = {
-    loaded: false,
-    chapters: [],
-    meta: {}
-  };
-
-  async function loadChaptersJson(url = 'chapters.json') {
-    try {
-      const res = await fetch(url, {cache: 'no-cache'});
-      if (!res.ok) {
-        console.warn('Audiobook JSON não encontrado:', res.status);
-        return;
-      }
+  async function loadJSON(url='chapters.json'){
+    try{
+      const res = await fetch(url, {cache:'no-cache'});
+      if (!res.ok) { console.warn('JSON não encontrado:', res.status); return; }
       const data = await res.json();
-      // validação mínima
-      if (!data || !Array.isArray(data.chapters)) {
-        console.warn('Formato inválido do JSON de capítulos');
-        return;
-      }
-      window[NAMESPACE].loaded = true;
-      window[NAMESPACE].chapters = data.chapters;
-      window[NAMESPACE].meta = { title: data.title || '', author: data.author || '' };
-
-      // callback opcional: se seu código existente expõe uma função para reinicializar UI, invoque-a aqui.
-      // Exemplo: if (typeof window.refreshAudiobookUI === 'function') window.refreshAudiobookUI(data);
-      // Se não houver callback, este script apenas disponibiliza os dados para o código atual usar.
-
-      // Exemplo de integração não intrusiva: procura elementos padrão e injeta conteúdo somente se estiverem vazios
-      safeInjectDefaultUI(data);
-    } catch (err) {
-      console.error('Erro ao carregar chapters.json:', err);
+      if (!data || !Array.isArray(data.chapters)) { console.warn('Formato inválido'); return; }
+      window[NS].loaded = true; window[NS].chapters = data.chapters;
+      applyChaptersToDOM(data.chapters);
+    }catch(err){
+      console.error('Erro ao carregar JSON:', err);
     }
   }
 
-  function escapeHtml(str) {
-    return String(str || '')
-      .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-      .replaceAll('"','&quot;').replaceAll("'",'&#39;');
+  function applyChaptersToDOM(chapters){
+    chapters.forEach(ch => {
+      const id = ch.id || ('chapter-' + (ch.index ?? Math.random().toString(36).slice(2,7)));
+      let container = document.getElementById(id);
+      const titleHtml = '<h2>' + escapeHtml(ch.title || '') + '</h2>';
+      const paragraphsHtml = (Array.isArray(ch.paragraphs) ? ch.paragraphs : (ch.text ? [ch.text] : []))
+        .map(p => '<p class="chapter-text">' + escapeHtml(p) + '</p>').join('');
+
+      if (container){
+        // Preserva controles existentes: só atualiza título e textos dentro do container
+        // Atualiza <h2> se existir ou injeta no topo
+        const existingH2 = container.querySelector('h2');
+        if (existingH2) {
+          existingH2.innerHTML = escapeHtml(ch.title || '');
+        } else {
+          container.insertAdjacentHTML('afterbegin', titleHtml);
+        }
+
+        // Remove só os .chapter-text antigos e injeta os novos
+        const oldTexts = container.querySelectorAll('.chapter-text');
+        oldTexts.forEach(n => n.remove());
+        // tenta inserir antes da navegação se existir, senão no final do container antes de controles
+        const nav = container.querySelector('.navigation');
+        if (nav) nav.insertAdjacentHTML('beforebegin', paragraphsHtml);
+        else container.insertAdjacentHTML('beforeend', paragraphsHtml);
+
+      } else {
+        // Cria estrutura mínima compatível com seu HTML exemplo
+        const wrapper = document.createElement('div');
+        wrapper.className = 'chapter';
+        wrapper.id = id;
+        wrapper.innerHTML = titleHtml
+          + '<div class="tts-controls"><h4>🎧 Controles de Áudio</h4>'
+          + '<div class="tts-row"><div class="tts-control"><label>Velocidade</label>'
+          + '<input type="range" id="speedControl" min="0.5" max="2" step="0.1" value="1">'
+          + '<span id="speedValue">1.0x</span></div>'
+          + '<div class="tts-control"><label>Tom</label>'
+          + '<input type="range" id="pitchControl" min="0.5" max="2" step="0.1" value="1">'
+          + '<span id="pitchValue">1.0</span></div></div></div>'
+          + paragraphsHtml
+          + '<div class="navigation"><button class="nav-btn" onclick="prevChapter()" disabled>← Anterior</button>'
+          + '<button class="nav-btn" onclick="nextChapter()">Próximo →</button></div>';
+        // anexa ao main ou body
+        const main = document.querySelector('main') || document.body;
+        main.appendChild(wrapper);
+      }
+    });
   }
 
-  // Injeção mínima e condicional para não sobrescrever conteúdo existente
-  function safeInjectDefaultUI(data) {
-    try {
-      // exemplo: títulos com ids #book-title, #book-author, container #chapters
-      const titleEl = document.getElementById('book-title');
-      if (titleEl && !titleEl.textContent.trim() && data.title) {
-        titleEl.textContent = data.title;
-      }
-      const authorEl = document.getElementById('book-author');
-      if (authorEl && !authorEl.textContent.trim() && data.author) {
-        authorEl.textContent = data.author;
-      }
+  // inicia automaticamente, mas não força substituições além do descrito
+  loadJSON();
 
-      const chaptersContainer = document.getElementById('chapters');
-      if (chaptersContainer && chaptersContainer.children.length === 0) {
-        data.chapters.forEach(ch => {
-          const art = document.createElement('article');
-          art.className = 'chapter';
-          art.dataset.id = ch.id ?? '';
-          art.innerHTML = '<h2>' + escapeHtml(ch.title) + '</h2>'
-                        + '<div class="chapter-text">' + escapeHtml(ch.text) + '</div>';
-          chaptersContainer.appendChild(art);
-        });
-      }
-    } catch (e) {
-      console.warn('safeInjectDefaultUI falhou:', e);
-    }
-  }
-
-  // Inicia carregamento de forma assíncrona, sem bloquear o restante do app
-  // Chame loadChaptersJson() manualmente se precisar controlar quando carregar
-  loadChaptersJson();
+  // expõe uma função para atualizar manualmente se necessário
+  window[NS].refresh = function(url){ return loadJSON(url); };
 
 })(window, document);
+
 
     
     </script>
