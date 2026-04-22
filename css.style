@@ -364,3 +364,111 @@
         .dark .book-cover p {
             color: #94a3b8;
         }
+
+        .chapter {
+            display: none;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            padding: 3.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-medium);
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chapter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-gradient);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .dark .chapter {
+            background: rgba(15, 15, 35, 0.8);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .chapter.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px) scale(0.95);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .chapter h2 {
+            font-family: 'Playfair Display', serif;
+            color: #2c3e50;
+            margin-bottom: 2.5rem;
+            font-size: 2.5rem;
+            font-weight: 600;
+            line-height: 1.2;
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+
+        .chapter h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: var(--accent-gradient);
+            border-radius: 2px;
+        }
+
+        .dark .chapter h2 {
+            color: #f8fafc;
+        }
+
+        .chapter p {
+            margin-bottom: 1.8rem;
+            font-size: 1.125rem;
+            line-height: 1.8;
+            text-align: justify;
+            color: #475569;
+            font-weight: 400;
+        }
+
+        .dark .chapter p {
+            color: #cbd5e1;
+        }
+
+        .chapter p:first-of-type {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #334155;
+        }
+
+        .dark .chapter p:first-of-type {
+            color: #e2e8f0;
+        }
+
+        .video-container {
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .video-container iframe {
+            width: 100%;
+            max-width: 560px;
+            height: 315px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
