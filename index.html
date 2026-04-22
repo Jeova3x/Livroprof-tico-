@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio3book Interativo</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" href="icon-192x192.png" />
+    <link rel="apple-touch-icon" href="icon-192x192.png" />
+    <meta name="theme-color" content="#2563eb" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.37);
+            --shadow-medium: 0 15px 35px rgba(31, 38, 135, 0.2);
+            --shadow-strong: 0 25px 50px rgba(31, 38, 135, 0.4);
+            --border-radius: 20px;
+            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.7;
+            transition: var(--transition);
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        body.dark {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e8eaed;
+        }
+
+        body.dark::before {
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(79, 172, 254, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(34, 197, 94, 0.1) 0%, transparent 50%);
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            z-index: 1000;
+        }
+
+        .progress-bar progress {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .progress-bar progress::-webkit-progress-bar {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .progress-bar progress::-webkit-progress-value {
+            background: #3498db;
+        }
+
+        .header {
+            position: fixed;
+            top: 4px;
+            left: 0;
+            right: 0;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            padding: 1.2rem 2rem;
+            z-index: 999;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-soft);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+        }
+
+        .dark .header {
+            background: rgba(15, 15, 35, 0.8);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .menu-toggle {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: var(--transition);
+            box-shadow: var(--shadow-soft);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-toggle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .menu-toggle:hover::before {
+            left: 100%;
+        }
+
+        .menu-toggle:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .menu-toggle:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .control-btn {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 0.75rem 1.25rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .control-btn:hover::before {
+            left: 100%;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: var(--shadow-medium);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .control-btn:active {
+            transform: translateY(-1px) scale(0.95);
+        }
+
+        .control-btn.theme {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .control-btn.share {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #2c3e50;
+        }
+
+        .control-btn.tts {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .sidebar {
+            position: fixed;
+            left: -320px;
+            top: 0;
+            width: 320px;
+            height: 100vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border-right: 1px solid var(--glass-border);
+            z-index: 998;
+            transition: var(--transition);
+            overflow-y: auto;
+            padding-top: 100px;
+            box-shadow: var(--shadow-strong);
+        }
+
+        .dark .sidebar {
+            background: rgba(15, 15, 35, 0.9);
+            border-right-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .toc {
+            padding: 1rem;
+        }
+
+        .toc h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+            font-size: 1.2rem;
+        }
+
+        .dark .toc h3 {
+            color: #ecf0f1;
+        }
+
+        .chapter-link {
+            display: block;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            background: rgba(52,152,219,0.1);
+            border-radius: 10px;
+            text-decoration: none;
+            color: #2c3e50;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .dark .chapter-link {
+            color: #ecf0f1;
+            background: rgba(52,152,219,0.2);
+        }
+
+        .chapter-link:hover {
+            background: rgba(52,152,219,0.2);
+            border-left-color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .chapter-link.active {
+            background: rgba(52,152,219,0.3);
+            border-left-color: #3498db;
+        }
+
+        .main-content {
+            margin-left: 0;
+            padding: 100px 2rem 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            padding-top: 100px;
+        }
+
+        .book-cover {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 4rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-strong);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .book-cover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--secondary-gradient);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .dark .book-cover {
+            background: rgba(15, 15, 35, 0.8);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .cover-image {
+            width: 240px;
+            height: 360px;
+            background: var(--secondary-gradient);
+            border-radius: var(--border-radius);
+            margin: 0 auto 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: white;
+            box-shadow: var(--shadow-strong);
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .cover-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .cover-image:hover::before {
+            transform: translateX(100%);
+        }
+
+        .cover-image:hover {
+            transform: translateY(-10px) scale(1.02);
+        }
+
+        .book-cover h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .book-cover p {
+            font-size: 1.3rem;
+            color: #64748b;
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }
+
+        .dark .book-cover p {
+            color: #94a3b8;
+        }
+
+        .chapter {
+            display: none;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            padding: 3.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-medium);
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chapter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-gradient);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .dark .chapter {
+            background: rgba(15, 15, 35, 0.8);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .chapter.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px) scale(0.95);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .chapter h2 {
+            font-family: 'Playfair Display', serif;
+            color: #2c3e50;
+            margin-bottom: 2.5rem;
+            font-size: 2.5rem;
+            font-weight: 600;
+            line-height: 1.2;
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+
+        .chapter h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: var(--accent-gradient);
+            border-radius: 2px;
+        }
+
+        .dark .chapter h2 {
+            color: #f8fafc;
+        }
+
+        .chapter p {
+            margin-bottom: 1.8rem;
+            font-size: 1.125rem;
+            line-height: 1.8;
+            text-align: justify;
+            color: #475569;
+            font-weight: 400;
+        }
+
+        .dark .chapter p {
+            color: #cbd5e1;
+        }
+
+        .chapter p:first-of-type {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #334155;
+        }
+
+        .dark .chapter p:first-of-type {
+            color: #e2e8f0;
+        }
+
+        .video-container {
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .video-container iframe {
+            width: 100%;
+            max-width: 560px;
+            height: 315px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3rem;
+            gap: 1rem;
+        }
+
+        .nav-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .nav-btn:hover {
+            background: #2980b9;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        .nav-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .tts-controls {
+            background: rgba(155,89,182,0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .tts-controls h4 {
+            margin-bottom: 1rem;
+            color: #8e44ad;
+        }
+
+        .dark .tts-controls h4 {
+            color: #bb8fce;
+        }
+
+        .tts-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .tts-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tts-control label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        .dark .tts-control label {
+            color: #95a5a6;
+        }
+
+        .tts-control input {
+            padding: 0.5rem;
+            border: 2px solid #bdc3c7;
+            border-radius: 10px;
+            width: 80px;
+            text-align: center;
+        }
+
+        .chatbot-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #e67e22;
+            color: white;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .chatbot-toggle:hover {
+            transform: scale(1.1);
+            background: #d35400;
+        }
+
+        .chatbot {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 380px;
+            height: 520px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-strong);
+            display: none;
+            flex-direction: column;
+            z-index: 999;
+            animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark .chatbot {
+            background: rgba(15, 15, 35, 0.9);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .chatbot.open {
+            display: flex;
+        }
+
+        .chatbot-header {
+            padding: 1rem;
+            background: #e67e22;
+            color: white;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            padding: 0.8rem;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background: #3498db;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .message.bot {
+            background: #ecf0f1;
+            color: #2c3e50;
+            align-self: flex-start;
+        }
+
+        .dark .message.bot {
+            background: #34495e;
+            color: #ecf0f1;
+        }
+
+        .chatbot-input {
+            padding: 1rem;
+            border-top: 1px solid #bdc3c7;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chatbot-input input {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid #bdc3c7;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        .chatbot-input button {
+            background: #e67e22;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .edit-mode {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(241,196,15,0.1);
+            border-radius: 10px;
+        }
+
+        .edit-mode h5 {
+            margin-bottom: 0.5rem;
+            color: #f39c12;
+        }
+
+        .edit-mode textarea {
+            width: 100%;
+            height: 60px;
+            padding: 0.5rem;
+            border: 1px solid #bdc3c7;
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        .edit-mode button {
+            margin-top: 0.5rem;
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+            }
+            
+            .main-content {
+                padding: 100px 1rem 2rem;
+            }
+            
+            .chapter {
+                padding: 2rem 1.5rem;
+            }
+            
+            .chatbot {
+                width: 300px;
+                right: 10px;
+            }
+            
+            .tts-row {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: var(--transition);
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .dark .highlight {
+            background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+            color: #fef3c7;
+            box-shadow: 0 2px 8px rgba(146, 64, 14, 0.4);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        /* Loading States */
+        .loading {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            padding: 0.5rem 1rem;
+            color: white;
+            font-size: 0.9rem;
+            animation: bounce 2s infinite;
+            z-index: 100;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        /* Enhanced Transitions */
+        * {
+            transition: var(--transition);
+        }
+
+        /* Focus States */
+        button:focus,
+        input:focus,
+        textarea:focus {
+            outline: 2px solid rgba(79, 172, 254, 0.5);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar">
+        <progress id="readingProgress" value="0" max="100"></progress>
+    </div>
+
+    <header class="header">
+        <button class="menu-toggle" onclick="toggleSidebar()">📚 Capítulos</button>
+        <div class="controls">
+            <button class="control-btn tts" onclick="toggleTTS()" id="ttsBtn">🔊 Ouvir</button>
+            <button class="control-btn theme" onclick="toggleTheme()">🌙 Tema</button>
+            <button class="control-btn share" onclick="shareChapter()">📤 Compartilhar</button>
+        </div>
+    </header>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="toc">
+            <h3>📖 Índice</h3>
+            <a href="#" class="chapter-link active" onclick="showChapter(0)">Capa do Livro</a>
+            <a href="#" class="chapter-link" onclick="showChapter(1)">Capítulo 1: Introdução</a>
+            <a href="#" class="chapter-link" onclick="showChapter(2)">Capítulo 2: Fundamentos</a>
+            <a href="#" class="chapter-link" onclick="showChapter(3)">Capítulo 3: Vídeo Explicativo</a>
+            <a href="#" class="chapter-link" onclick="showChapter(4)">Capítulo 4: Desenvolvimento</a>
+            <a href="#" class="chapter-link" onclick="showChapter(5)">Capítulo 5: Práticas</a>
+            <a href="#" class="chapter-link" onclick="showChapter(6)">Capítulo 6: Avançado</a>
+            <a href="#" class="chapter-link" onclick="showChapter(7)">Capítulo 7: Implementação</a>
+            <a href="#" class="chapter-link" onclick="showChapter(8)">Capítulo 8: Otimização</a>
+            <a href="#" class="chapter-link" onclick="showChapter(9)">Capítulo 9: Testes</a>
+            <a href="#" class="chapter-link" onclick="showChapter(10)">Capítulo 10: Conclusão</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+    <!-- Capa do Livro -->
+    <div class="chapter active" id="chapter-0">
+        <div class="book-cover">
+            <div class="cover-image">
+                <img src="https://i.imgur.com/44Pb7Yd.jpeg" alt="Capa do Livro" style="max-width: 100%; height: auto;">
+            </div>
+            <h1>Jesus</h1>
+            <p>Uma experiência completa de leitura digital</p>
+            <button class="nav-btn" onclick="nextChapter()">Começar Leitura →</button>
+        </div>
+    </div>
+</main>
+
+
+        <!-- Capítulo 1 -->
+        <div class="chapter" id="chapter-1">
+            <h2>Capítulo 1: Os Sete Selos </h2>
+            <div class="tts-controls">
+                <h4>🎧 Controles de Áudio</h4>
+                <div class="tts-row">
+                    <div class="tts-control">
+                        <label>Velocidade</label>
+                        <input type="range" id="speedControl" min="0.5" max="2" step="0.1" value="1">
+                        <span id="speedValue">1.0x</span>
+                    </div>
+                    <div class="tts-control">
+                        <label>Tom</label>
+                        <input type="range" id="pitchControl" min="0.5" max="2" step="0.1" value="1">
+                        <span id="pitchValue">1.0</span>
+                    </div>
+                </div>
+            </div>
+         
+        <p class="chapter-text">Depois que o Cordeiro abriu o sétimo selo e o silêncio se estabeleceu nos céus, eu senti que algo estava prestes a acontecer. A quietude não era ausência, mas preparação. Vi sete anjos diante de Deus, e a cada um deles foi dada uma trombeta. (Apocalipse capítulo 8 versículo 2) Meu coração compreendeu: o silêncio antecede o som do juízo, e o toque das trombetas é a resposta de Deus ao clamor dos justos que aguardam a justiça.</p>
+
+<p class="chapter-text">Então outro anjo veio e colocou incenso sobre o altar de ouro diante do trono, e as orações dos santos subiram diante de Deus. (Apocalipse capítulo 8 versículo 3 e 4) Eu percebi que nada do que oramos se perde. Cada lágrima, cada clamor sincero é guardado no altar celestial. Quando o anjo lançou o incensário à terra, houve trovões, relâmpagos e terremoto. Entendi que o mover de Deus no céu sempre provoca abalos na terra.</p>
+
+<p class="chapter-text">Quando o primeiro anjo tocou a trombeta, saraiva e fogo misturados com sangue foram lançados sobre a terra, e a terça parte das árvores se queimou. (Apocalipse capítulo 8 versículo 7) Eu vi a criação gemer sob o peso da destruição. O verde da vida se transformava em cinza, e percebi que o homem havia ferido o jardim que Deus lhe confiou. O juízo não era apenas sobre a natureza, mas sobre a negligência humana diante da criação.</p>
+
+<p class="chapter-text">O segundo anjo tocou a trombeta, e algo como uma grande montanha ardendo em fogo foi lançado ao mar, e a terça parte do mar se tornou em sangue. (Apocalipse capítulo 8 versículo 8 e 9) Eu vi os mares, antes fonte de sustento, tornarem-se fonte de morte. Os navios afundavam, os peixes morriam, e as águas se tornavam amargas. Então compreendi que aquilo que o homem idolatrava como riqueza agora se tornava sua ruína.</p>
+
+<p class="chapter-text">O terceiro anjo tocou a trombeta, e caiu do céu uma grande estrela ardendo como uma tocha, e caiu sobre a terça parte dos rios. (Apocalipse capítulo 8 versículo 10 e 11) O nome da estrela era Absinto, e as águas se tornaram amargas, e muitos morreram por causa delas. Eu senti o peso da contaminação espiritual. As fontes puras foram corrompidas — como doutrinas misturadas com engano. O amargor não era apenas das águas, mas das almas que abandonaram a verdade.</p>
+
+<p class="chapter-text">Quando o quarto anjo tocou a trombeta, a terça parte do sol, da lua e das estrelas foi ferida, para que se escurecesse a luz. (Apocalipse capítulo 8 versículo 12 e 13) Eu vi trevas cobrirem a Terra — não trevas físicas apenas, mas morais e espirituais. E ouvi uma voz clamando: “Ai, ai, ai dos que habitam na terra!” Então entendi que os próximos toques trariam dor ainda mais profunda, pois os homens endureceram o coração diante da graça.</p>
+
+<p class="chapter-text">O quinto anjo tocou a trombeta, e vi uma estrela caída do céu à terra, e foi-lhe dada a chave do poço do abismo. (Apocalipse capítulo 9 versículo 1 a 3) Do abismo subiu fumaça como de grande fornalha, e dela saíram gafanhotos com poder de escorpiões. Eu percebi que não eram criaturas comuns, mas espíritos de tormento liberados sobre aqueles que rejeitaram a marca de Deus. O sofrimento era intenso, mas ainda era misericórdia — pois mesmo na dor, havia espaço para arrependimento.</p>
+
+<p class="chapter-text">Quando o sexto anjo tocou a trombeta, ouvi uma voz junto ao altar de ouro dizendo: “Solta os quatro anjos que estão presos junto ao grande rio Eufrates.” (Apocalipse capítulo 9 versículo 13 a 15) Eles foram soltos para matar a terça parte dos homens. Eu vi exércitos sem número marchando, e percebi que a guerra final se aproximava. Mas mesmo diante da morte, os homens não se arrependeram de suas obras. Meu espírito chorou, porque o juízo não os quebrantava — apenas revelava quem realmente eram.</p>
+
+<p class="chapter-text">Então vi um anjo poderoso descer do céu, envolto em nuvem, com um arco-íris sobre a cabeça. (Apocalipse capítulo 10 versículo 1 e 2) Ele trazia um livrinho aberto na mão, e ouvi uma voz que dizia: “Toma-o e come-o.” Eu o comi, e na boca era doce como mel, mas no ventre era amargo. Compreendi que a palavra profética é doce para quem a ouve, mas amarga para quem a vive. Falar da verdade exige carregar seu peso.</p>
+
+<p class="chapter-text">Por fim, o sétimo anjo tocou a trombeta, e vozes altas soaram no céu dizendo: “Os reinos do mundo vieram a ser de nosso Senhor e do seu Cristo, e Ele reinará para todo o sempre.” (Apocalipse capítulo 11 versículo 15) Eu caí de joelhos, porque entendi que toda dor, toda guerra e todo juízo nos conduzem a esse momento: o Reino de Deus sendo plenamente revelado. O som da última trombeta não anuncia destruição — anuncia vitória. O Cordeiro reina, e a Terra enfim se calará diante da Sua glória.</p>
+
+<p class="chapter-text">Hoje, quando olho o cenário do mundo, percebo o eco dessas trombetas nos acontecimentos humanos. Vejo o cavalo branco reaparecer em símbolos de paz, e até mesmo em gestos públicos de líderes religiosos. O Papa montando um cavalo branco é saudado como mensageiro de união, mas o Espírito me mostra que a aparência de paz muitas vezes oculta a preparação do falso messias — aquele que virá com palavras suaves e planos de conciliação global.</p>
+
+<p class="chapter-text">As nações clamam por uma nova ordem. A tecnologia promete salvar, mas também escraviza. Identidades digitais, moedas virtuais e sistemas globais de vigilância surgem com o argumento de segurança e eficiência. Porém, vejo o mesmo espírito do cavalo vermelho e do preto, conduzindo o mundo à dependência total. O controle que antes era político agora é espiritual — uma teia invisível que prende as almas sob o disfarce de progresso.</p>
+
+<p class="chapter-text">As guerras se multiplicam, não apenas com armas, mas com informações. A verdade é manipulada, e a mentira se tornou moeda. Vejo o espírito do quarto cavalo — o amarelado — cavalgando pelas telas e noticiários, espalhando medo, confusão e morte. Tudo parece normal, mas o que realmente acontece é o cumprimento exato das palavras proféticas. O apocalipse não começa com explosões — começa com corações frios e consciências adormecidas.</p>
+
+<p class="chapter-text">Enquanto isso, a igreja se divide. Uns buscam o evangelho da fama, outros se rendem à religião da conveniência. O quinto selo continua a se cumprir diante dos nossos olhos, pois ainda há mártires sendo mortos — não com espadas, mas com silêncio, censura e desprezo. A fé verdadeira ainda sangra, mesmo em tempos modernos.</p>
+
+<p class="chapter-text">E vejo o sexto selo prestes a se abrir novamente sobre nós. Terremotos, sinais no sol e na lua, nações abaladas por pragas e catástrofes. Tudo isso é o grito da criação anunciando: “O Rei está voltando.” Mas o mundo ainda busca refúgio nas cavernas do entretenimento e nas montanhas da ciência, tentando esconder-se da glória que virá.</p>
+
+<p class="chapter-text">Eu não falo como quem teme, mas como quem espera. Pois sei que o toque da última trombeta não será apenas juízo, mas libertação. E aqueles que permanecerem firmes ouvirão não o som do terror, mas o som das bodas do Cordeiro. O tempo se cumpre diante de nós. As profecias não são mitos antigos — são notícias antecipadas do que já começa a acontecer.</p>
+                   <div class="navigation">
+                <button class="nav-btn" onclick="prevChapter()" disabled>← Anterior</button>
+                <button class="nav-btn" onclick="nextChapter()">Próximo →</button>
+            </div>
+        </div>
+
+        <!-- Capítulo 2 -->
+        <div class="chapter" id="chapter-2">
+            <h2>Capítulo 2: A preparação</h2>
+           <p class="chapter-text">A visão se tornou mais clara. O Espírito me mostrou o que Paulo profetizou aos cristãos de Tessalônica: <strong>"O homem do pecado se assentará no templo de Deus, querendo parecer Deus."</strong> (2 Tessalonicenses 2:3-4)</p>
+
+<p class="chapter-text">O mundo já está sendo preparado para isso. O trono de Deus, que pertence ao Criador, está sendo cobiçado por aquele que caiu do céu. Satanás não deseja apenas destruir a fé — ele deseja ser adorado. E, para isso, ele está montando seu palco diante das nações, usando religião, tecnologia e ilusões de paz.</p>
+
+<p class="chapter-text">Os que não conhecem as Escrituras acreditam que a humanidade está evoluindo. Mas os que conhecem o Espírito sabem: o sistema do Anticristo está sendo erguido pedra sobre pedra, código sobre código, lei sobre lei. Tudo parece progresso, mas é controle.</p>
+
+<p class="chapter-text">Eu vi, em oração, uma multidão ajoelhada diante de telas brilhantes, adorando aquilo que produzia luz, mas não vida. A idolatria do século XXI não tem forma de estátua, mas de sistema. Não exige templos, pois já habita no coração dos homens.</p>
+
+<p class="chapter-text">O apóstolo advertiu: <strong>"Já o mistério da iniquidade opera; somente há um que agora o detém, até que do meio seja tirado."</strong> (2 Tessalonicenses 2:7)</p>
+
+<p class="chapter-text">O Espírito Santo ainda detém o caos total. Mas, quando for retirado, o mundo verá o verdadeiro rosto da besta. Até lá, o inimigo trabalha em silêncio, infiltrando-se em governos, sistemas financeiros, educação e cultura. Ele se veste de modernidade, mas sua essência é antiga como o Éden.</p>
+
+<p class="chapter-text">Eu percebi que o trono de Deus, que é celestial, está sendo falsificado em cada coração que se exalta. Quando o homem diz “eu sou suficiente”, ele ecoa o mesmo orgulho de Lúcifer. E quando as nações clamam “nunca estivemos tão seguras”, o relógio do juízo avança mais um minuto.</p>
+
+<p class="chapter-text">Como Paulo escreveu: <strong>"Quando disserem: ‘Paz e segurança’, então lhes sobrevirá repentina destruição, como as dores de parto àquela que está grávida; e de modo nenhum escaparão."</strong> (1 Tessalonicenses 5:3)</p>
+
+<p class="chapter-text">Deus me fez entender: o trono do Anticristo não será apenas político. Ele será espiritual. Ele buscará lugar dentro da igreja, dentro da fé, dentro do templo do coração humano. E muitos o receberão pensando ser o próprio Cristo, pois ele virá com palavras suaves e sinais que encantam os olhos, mas corrompem a verdade.</p>
+
+<p class="chapter-text">Jesus alertou: <strong>"Se possível fora, enganariam até os escolhidos."</strong> (Mateus 24:24)</p>
+
+<p class="chapter-text">O Anticristo se levantará não com espadas, mas com discursos. Ele prometerá unidade, inclusão e paz. E, quando todos o aplaudirem, a verdadeira guerra espiritual começará.</p>
+
+<p class="chapter-text">Por isso, o Espírito Santo ainda clama: <strong>"Quem tem ouvidos, ouça o que o Espírito diz às igrejas."</strong> (Apocalipse 2:7)</p>
+
+<p class="chapter-text">Eu entendo agora que este é o chamado para permanecer desperto. Não basta crer em Deus — é preciso permanecer fiel. O inimigo busca adoração, e, cada vez que um coração se prostra diante do mundo, ele avança um passo em direção ao trono que nunca lhe pertencerá.</p>
+
+<p class="chapter-text">O fim se aproxima, mas o Senhor reina. E, mesmo quando o falso se erguer, o verdadeiro ainda triunfará. Pois está escrito: <strong>"O Senhor destruirá com o sopro de sua boca aquele iníquo e o aniquilará pelo esplendor da sua vinda."</strong> (2 Tessalonicenses 2:8)</p>
+
+<p class="chapter-text">Há poder nas palavras do Cordeiro. Ele não precisa de exército nem de armas — basta o sopro de sua boca, e todo o sistema das trevas cairá como cinza diante do fogo eterno.</p>
+
+<p class="chapter-text">Portanto, vigiai e orai. O tempo do engano chegou, mas o tempo da glória também está próximo. O trono do Anticristo será breve; o trono de Cristo será eterno.</p>      <div class="navigation">
+                <button class="nav-btn" onclick="prevChapter()">← Anterior</button>
+                <button class="nav-btn" onclick="nextChapter()">Próximo →</button>
+            </div>
+        </div>
+
+        <!-- Capítulo 3 com Vídeo -->
+        <div class="chapter" id="chapter-3">
+            <h2>Capítulo 3: A Babilônia</h2>
+            <p class="chapter-text">Lembrei-me de Babel: <strong>“Vinde, edifiquemos nós uma cidade e uma torre cujo cume toque nos céus, e façamo-nos um nome.”</strong> (Gênesis 11:4). Aquela antiga ambição reaparecia, agora revestida de códigos e contratos.</p>
+                 <div class="video-container">
+                                <div class="video-wrapper">
+                                    <iframe src="https://www.youtube.com/embed/gSBO_7obVFE" allowfullscreen></iframe>
+                                </div>
+                            </div>
+                            <p class="chapter-text">Eu ouvi o som das trombetas cessarem, e então vi os anjos com as taças nas mãos. Cada uma delas continha a justa ira de Deus, destinada à Terra. O céu silenciou por um momento — e eu temi. Pois sabia que o tempo da paciência havia dado lugar ao tempo do juízo. (capítulo 16 versículo 1 e 2)</p>
+
+<p class="chapter-text">O primeiro anjo derramou sua taça sobre a terra, e feridas malignas cobriram os que traziam a marca da besta e adoravam sua imagem. E eu chorei, pois vi que muitos haviam trocado o selo do Espírito pela marca da conveniência. (capítulo 16 versículo 2 e 3)</p>
+
+<p class="chapter-text">O segundo anjo derramou sua taça no mar, e ele se tornou como sangue de morto, e toda alma vivente morreu. E eu compreendi: o que antes sustentava a vida agora se tornou lembrança de juízo, porque os homens haviam corrompido as águas com sua ganância. (capítulo 16 versículo 3 e 4)</p>
+
+<p class="chapter-text">O terceiro anjo derramou sua taça nos rios e nas fontes das águas, e elas se tornaram sangue. E ouvi o anjo das águas dizer: “Tu és justo, ó Senhor, que és e que eras, porque julgaste estas coisas.” E eu me prostrei, reconhecendo que o juízo é santo e verdadeiro. (capítulo 16 versículo 4 e 5)</p>
+
+<p class="chapter-text">O quarto anjo derramou sua taça sobre o sol, e foi dado poder para abrasar os homens com fogo. E os homens foram queimados com grande calor, mas não se arrependeram, antes blasfemaram o nome de Deus. E eu tremi, porque percebi como o coração endurecido pode desafiar até a misericórdia. (capítulo 16 versículo 8 e 9)</p>
+
+<p class="chapter-text">O quinto anjo derramou sua taça sobre o trono da besta, e o seu reino se fez em trevas. E os homens mordiam suas línguas de dor. E eu vi que aquele trono de orgulho, cheio de brilho e artifício, agora estava coberto de escuridão e silêncio. (capítulo 16 versículo 10 e 11)</p>
+
+<p class="chapter-text">O sexto anjo derramou sua taça sobre o grande rio Eufrates, e suas águas secaram, para que se preparasse o caminho dos reis do oriente. E vi espíritos imundos, semelhantes a rãs, saírem da boca do dragão, da besta e do falso profeta. Eles iam aos reis da terra para ajuntá-los para a batalha do grande dia do Deus Todo-Poderoso. (capítulo 16 versículo 12 e 14)</p>
+
+<p class="chapter-text">E então ouvi a voz do Senhor dizendo: “Eis que venho como ladrão; bem-aventurado aquele que vigia e guarda suas vestes, para que não ande nu e não se veja a sua vergonha.” E eu me vesti de arrependimento, pois não quero ser achado adormecido. (capítulo 16 versículo 15)</p>
+
+<p class="chapter-text">O sétimo anjo derramou sua taça no ar, e saiu uma grande voz do templo do céu, do trono, dizendo: “Está feito!” E houve vozes, trovões e relâmpagos, e um grande terremoto como nunca houve desde que há homens sobre a terra. (capítulo 16 versículo 17 e 18)</p>
+
+<p class="chapter-text">E eu vi as cidades das nações caírem, e Babilônia, a grande, ser lembrada diante de Deus, para lhe dar o cálice do vinho do furor da Sua ira. E montes fugiram, e ilhas desapareceram. Tudo o que parecia sólido se desfez diante do poder eterno. (capítulo 16 versículo 19 e 20)</p>
+
+<p class="chapter-text">E caíram do céu grandes pedras de granizo sobre os homens, e ainda assim blasfemaram contra Deus por causa do flagelo do granizo, porque o seu castigo era muito grande. E eu entendi: quem não se quebranta pelo amor, se quebrará pelo juízo. (capítulo 16 versículo 21)</p>
+
+<p class="chapter-text">Então me ajoelhei e clamei: “Senhor, conserva em mim um coração contrito, para que eu não precise conhecer Tua ira, mas Tua graça.” Pois eu vi que cada taça é o reflexo da justiça que os homens rejeitaram, e que o arrependimento ainda é a única ponte entre o homem e o perdão. (capítulo 17 versículo 1 e 2)</p>
+
+<p class="chapter-text">E agora eu testifico: quem ouve estas palavras, desperte. Pois o tempo se cumpre, e aquele que é Santo virá em glória. Que não sejamos achados entre os que blasfemam, mas entre os que adoram em espírito e verdade. Porque o Cordeiro venceu, e com Ele vencerão os que são chamados, eleitos e fiéis. (capítulo 17 versículo 14 e 15)</p>
+  <div class="navigation">
+                <button class="nav-btn" onclick="prevChapter()">← Anterior</button>
+                <button class="nav-btn" onclick="nextChapter()">Próximo →</button>
+            </div>
+        </div>
+
+        <!-- Capítulos 4-10 -->
+        <div class="chapter" id="chapter-4">
+            <h2>Capítulo 4: O número da besta</h2>
+            <p class="chapter-text">O mundo moderno oferece conforto, status e aceitação, e poucos notam que esses mesmos valores podem ser armadilhas. Eu percebi que a verdadeira batalha não é por território ou poder humano, mas pelo coração e pela fé daqueles que acreditam.</p>
+
+<p class="chapter-text">Enquanto a tecnologia avança e as plataformas conectam bilhões de pessoas, a tentação de seguir a maioria sem questionar aumenta. Apocalipse alerta: <strong>“E adoraram o dragão que deu à besta o seu poder; e adoraram a besta, dizendo: Quem é semelhante à besta? Quem poderá batalhar contra ela?”</strong> (Apocalipse 13:4). Eu vi essa adoração sutil se espalhando em cada hábito e crença coletiva.</p>
+
+<p class="chapter-text">Vi o povo celebrando avanços e inovações, sem notar que a mesma rede que conecta também vigia; que a mesma voz que entretém também molda o pensamento. E eu entendi que a liberdade humana se esvai em silêncio, trocada por conveniência e aprovação.</p>
+
+<p class="chapter-text">Aplaudem o sucesso, mas não percebem o preço. Cada clique, cada aceitação cega, cada “concordo” sem reflexão é um tijolo a mais na torre que se levanta contra o discernimento espiritual. O inimigo não impõe; ele convence, e sua voz se mistura à música do cotidiano.</p>
+
+<p class="chapter-text">Eu compreendi que a vigilância não é sobre controlar os outros, mas sobre manter meu próprio coração firme. Cada escolha consciente de não ceder às multidões é um passo em direção à liberdade que só vem de Deus.</p>
+
+<p class="chapter-text">Vi multidões que acreditavam estar despertas, mas dormiam com os olhos abertos, alimentadas por uma corrente constante de estímulos. E o Espírito me mostrou que o maior engano não é o que escraviza, mas o que faz o homem pensar que é livre enquanto é dominado.</p>
+
+<p class="chapter-text">E assim, continuei a minha jornada, observando, aprendendo e alertando. Porque mesmo em meio à sedução das multidões, existe sempre um caminho de discernimento para quem busca a verdade e permanece fiel à Rocha eterna.</p>
+
+<p class="chapter-text">Eu vi as massas sendo conduzidas por promessas e entretenimento, sem perceber que caminhavam para a armadilha do engano. A multidão que aplaude sem discernir caminha para a perdição.</p>
+
+<p class="chapter-text">Jeremias disse: <strong>“Enganoso é o coração, mais do que todas as coisas.”</strong> (Jeremias 17:9). E eu compreendi que a sedução das multidões é o campo onde o inimigo trabalha silenciosamente.</p>
+
+<p class="chapter-text">Vi também pregadores e líderes que adaptaram a mensagem da cruz ao gosto do público, temendo a rejeição mais do que temendo a Deus. E o Espírito me disse: “Quando o altar busca aplausos, a glória já partiu.”</p>
+
+<p class="chapter-text">As massas clamam por paz, mas recusam arrependimento; pedem prosperidade, mas rejeitam santidade. E eu vi que essa inversão é a semente do domínio da besta, pois o coração que busca conforto antes da verdade já está preparado para ser governado.</p>
+
+<p class="chapter-text">O profeta alerta que a vigilância do fiel é essencial, pois os sinais do fim são sutis, mas poderosos para aqueles que não estão firmes. A fé não será apenas crença, mas resistência; e o discernimento, a lâmpada que impedirá muitos de caírem na escuridão.</p>
+
+<p class="chapter-text">Então o Espírito me conduziu a um monte alto, e de lá vi o mundo como um vasto palco. Cada luz era uma alma, e cada sombra, um engano disfarçado. E eu ouvi a voz suave dizendo: “Quem é fiel nas pequenas escolhas não será vencido no grande dia.”</p>
+
+<p class="chapter-text">Compreendi que a maior prova do fim não será a dor, mas a distração. Pois o diabo teme o crente que sofre, mas celebra o que se acomoda. Aquele que adormece em meio à abundância é o primeiro a perder o caminho.</p>
+
+<p class="chapter-text">E eu me prostrei em oração, pedindo que o Senhor guardasse meu coração. Pois a tentação de se misturar às multidões é grande, mas a recompensa da fidelidade é eterna. Que o povo desperte, pois as trombetas estão prestes a soar, e o tempo da neutralidade está terminando.</p>
+
+<p class="chapter-text">Agora eu levanto minha voz: não sigam o ritmo do mundo, pois cada aplauso ao engano é uma renúncia à verdade. O Espírito ainda fala — e quem tem ouvidos, ouça. O tempo é curto, mas a graça ainda está aberta para os que discernem e se voltam para Deus.</p>
+ <div class="navigation">
+                <button class="nav-btn" onclick="prevChapter()">← Anterior</button>
+                <button class="nav-btn" onclick="nextChapter()">Próximo →</button>
+            </div>
+        </div>
+
+        <div class="chapter" id="chapter-5">
+            <h2>Capítulo 5: O engano do mundo</h2>
+            
+            ```html
+<p class="chapter-text">Eu caminhei por corredores de poder, observando sorrisos e discursos que encantavam multidões. Vi o brilho das coroas humanas, as vozes que prometiam redenção sem arrependimento, e percebi que o mesmo espírito de engano ainda sopra nas assembleias dos grandes. A beleza das palavras e a grandiosidade das estruturas escondiam algo antigo: a tentação de dominar corações e afastá-los da verdade viva.</p>
+
+<p class="chapter-text">O profeta Oséias me veio à mente: <strong>“Eles multiplicam mentiras e enganos; o coração dos homens se desvia do Senhor.”</strong> (Oséias capítulo 4 versículo 12). E eu proclamei em alta voz: o desvio não começa com o ódio, mas com o encanto! É o brilho da vaidade que enfraquece a fé, é a adulação que adormece a consciência. Oh geração que ama o elogio mais do que a correção, despertai!</p>
+
+<p class="chapter-text">Em cada reunião, em cada tratado e cada construção grandiosa, eu via padrões que se repetem: promessa de prosperidade, paz sem Deus, segurança sem fé. E eu gritei dentro de mim: “Quantas vezes a humanidade buscará conforto onde deveria buscar arrependimento?” Pois o ouro reluz, mas não salva; os palácios se erguem, mas não resistem ao fogo da justiça.</p>
+
+<p class="chapter-text">Apocalipse adverte sobre falsos sinais: <strong>“E faz grandes sinais, de maneira que até fogo faz descer do céu à terra, diante dos homens.”</strong> (Apocalipse capítulo 13 versículo 13). E eu vi isso! Sinais, prodígios, tecnologias, luzes e milagres falsos — todos clamando glória, mas sem o selo do Cordeiro. O mundo se maravilha com o espetáculo, e poucos perguntam: de onde vem esse poder?</p>
+
+<p class="chapter-text">Eu vi homens aplaudindo o que os destrói, e igrejas que substituíram o altar pelo palco. Vi ministros trocando a unção por influência, e o povo encantado com o som, mas vazio da Palavra. E minha voz se inflamou como chama: “O Senhor não habita em templos de vaidade! Ele busca corações quebrantados e espíritos que tremem diante da Sua Palavra!”</p>
+
+<p class="chapter-text">Continuei a observar, discernindo o que era fachada e o que vinha do Espírito. Porque nem todo brilho vem do céu, e nem todo silêncio é fraqueza. Há uma glória disfarçada que escraviza, e há uma humildade oculta que liberta. Eu escolhi a segunda, mesmo que custe aplausos, pois prefiro ser verdadeiro diante de Deus do que famoso diante dos homens.</p>
+
+<p class="chapter-text">E enquanto o mundo se maravilha com sua própria grandeza, eu mantenho meu coração alerta, atento aos sinais, discernindo o que deve ser seguido e o que deve ser rejeitado. Pois sei que o engano não vem com chifres, mas com promessas. A aparência pode enganar, mas a verdade permanece — e essa verdade tem nome: Jesus Cristo, o Rei eterno!</p>
+
+<p class="chapter-text">Eu caminhei por palácios de poder e vi sorrisos que escondiam ambição. Vi mãos estendidas em falsa paz, alianças formadas em sombras, tratados selados com mentiras. E minha alma queimou como fogo, pois lembrei das palavras do Senhor: “Ai dos que chamam o mal de bem e o bem de mal!” (Isaías capítulo 5 versículo 20). O juízo se aproxima daqueles que negociam a verdade.</p>
+
+<p class="chapter-text">Vi multidões fascinadas por discursos que prometem unidade sem arrependimento, amor sem santidade, progresso sem submissão a Deus. E o Espírito bradou dentro de mim: “Isso é o evangelho da besta — uma mensagem sem cruz e uma fé sem sangue.” Eu tremi, porque percebi que o inimigo não quer destruir a religião, quer apenas torná-la inofensiva.</p>
+
+<p class="chapter-text">Apocalipse adverte sobre sinais e prodígios falsos que seduzem até os escolhidos. E eu senti o peso da responsabilidade de permanecer alerta e anunciar o engano. A voz profética deve voltar a ecoar, mesmo que incomode, mesmo que custe reputações. Porque o silêncio dos justos fortalece o trono do mal!</p>
+
+<p class="chapter-text">Então levantei minha voz como trombeta e clamei: “Arrependei-vos, nações! O Senhor vem com poder e fogo, e com Ele está a espada da verdade!” Pois o mesmo Deus que adverte é o que salva, o mesmo que julga é o que oferece misericórdia — mas o tempo da indecisão está terminando.</p>
+
+<p class="chapter-text">Vi no horizonte uma linha de fogo — não do inferno, mas da purificação. E o Espírito me revelou: o que for falso será queimado, o que for santo permanecerá. E eu chorei, porque muitos confundirão a purificação com destruição, sem entender que é o amor divino purgando a mentira.</p>
+
+<p class="chapter-text">Assim digo, com voz ardente: o mundo pode ter suas torres, seus tronos e suas coroas, mas o Reino de Cristo não se dobra diante de nenhum império. Preparem-se, ó filhos da fé, pois a batalha que se aproxima não se vence com espada, mas com santidade!</p>
+
+<p class="chapter-text">E eu testifico diante do céu e da terra: o tempo de brincar com o evangelho acabou. A Palavra deve ser pregada com fogo, com lágrimas, com urgência! Pois o Senhor vem — e trará consigo a recompensa e o juízo. Que os ouvidos surdos se abram, que os corações frios despertem, porque o Rei está à porta!</p>
+
+<p class="chapter-text">E quando a trombeta soar, quero ser achado fiel, não temeroso. Que o fogo da pregação não se apague, que a voz do profeta não se cale. Eu não falo para agradar homens, falo para libertá-los. E em nome do Cordeiro, declaro: ainda há tempo para arrependimento, mas o relógio do céu já se move com passos de eternidade.</p>
+
+       <div class="navigation">
+                <button class="nav-btn" onclick="prevChapter()">← Anterior</button>
+                <button class="nav-btn" onclick="nextChapter()">Próximo →</button>
+            </div>
+        </div>
+
+        <div class="chapter" id="chapter-6">
+            <h2>Capítulo 6: Recursos Avançados</h2>
+          <p class="chapter-text">Eu caminhei por corredores de poder, observando sorrisos e discursos que encantavam multidões. A beleza das palavras e a grandiosidade das estruturas escondiam algo antigo: a mesma tentação de enganar e controlar que os profetas denunciaram há séculos.</p>
+
+            <p class="chapter-text">O profeta Oséias me veio à mente: <strong>“Eles multiplicam mentiras e enganos; o coração dos homens se desvia do Senhor.”</strong> (Oséias capítulo4 versículo12). Eu percebi que a sedução das aparências sempre desviou o coração humano.</p>
+
+            <p class="chapter-text">Em cada reunião, em cada tratado e cada construção grandiosa, eu via padrões que se repetem: promessa de prosperidade, paz sem Deus, segurança sem fé. A história se repete e, ainda assim, a humanidade parece não aprender.</p>
+
+            <p class="chapter-text">Apocalipse adverte sobre falsos sinais: <strong>“E faz grandes sinais, de maneira que até fogo faz descer do céu à terra, diante dos homens.”</strong> (Apocalipse capítulo13 versículo13). Eu entendi que nem todo milagre é bom; nem toda maravilha conduz à verdade.</p>
+
+            <p class="chapter-text">Eu continuei a observar, discernindo o que era apenas fachada e o que vinha do Espírito. Porque é fácil se encantar com o brilho e esquecer da Rocha eterna. Cada decisão de não se deixar seduzir é um passo firme no caminho da fé.</p>
+
+            <p class="chapter-text">E enquanto o mundo se maravilha com sua própria grandeza, eu mantenho meu coração alerta, atento aos sinais, discernindo o que deve ser seguido e o que deve ser rejeitado, sabendo que a aparência pode enganar, mas a verdade permanece.</p>
+                        <p class="chapter-text">Eu caminhei por palácios de poder e vi sorrisos que escondiam ambição. A grandiosidade das estruturas não passava de fachada, e os profetas já alertaram que o coração humano se desvia facilmente.</p>
+
+            
+            <p class="chapter-text">Apocalipse adverte sobre sinais e prodígios falsos que seduzem até os escolhidos. Eu senti o peso da responsabilidade de permanecer alerta e anunciar o engano.</p>
+    <div class="navigation">
+                <button class="nav-btn" onclick="prevChapter()">← Anterior</button>
+                <button class="nav-btn" onclick="nextChapter()">Próximo →</button>
+            </div>
+        </div>
+
+        <div class="chapter" id="chapter-7">
+            <h2>Capítulo 7: A ilusão desse mundo</h2>
+         <p class="chapter-text">Eu caminhei por corredores de poder, observando sorrisos e discursos que encantavam multidões. A beleza das palavras e a grandiosidade das estruturas escondiam algo antigo: a mesma tentação de enganar e controlar que os profetas denunciaram há séculos.</p>
+
+            <p class="chapter-text">O profeta Oséias me veio à mente: <strong>“Eles multiplicam mentiras e enganos; o coração dos homens se desvia do Senhor.”</strong> (Oséias 4:12). Eu percebi que a sedução das aparências sempre desviou o coração humano.</p>
+
+            <p class="chapter-text">Em cada reunião, em cada tratado e cada construção grandiosa, eu via padrões que se repetem: promessa de prosperidade, paz sem Deus, segurança sem fé. A história se repete e, ainda assim, a humanidade parece não aprender.</p>
+
+            <p class="chapter-text">Apocalipse adverte sobre falsos sinais: <strong>“E faz grandes sinais, de maneira que até fogo faz descer do céu à terra, diante dos homens.”</strong> (Apocalipse 13:13). Eu entendi que nem todo milagre é bom; nem toda maravilha conduz à verdade.</p>
+
+            <p class="chapter-text">Eu continuei a observar, discernindo o que era apenas fachada e o que vinha do Espírito. Porque é fácil se encantar com o brilho e esquecer da Rocha eterna. Cada decisão de não se deixar seduzir é um passo firme no caminho da fé.</p>
+
+            <p class="chapter-text">E enquanto o mundo se maravilha com sua própria grandeza, eu mantenho meu coração alerta, atento aos sinais, discernindo o que deve ser seguido e o que deve ser rejeitado, sabendo que a aparência pode enganar, mas a verdade permanece.</p>
+                        <p class="chapter-text">Eu caminhei por palácios de poder e vi sorrisos que escondiam ambição. A grandiosidade das estruturas não passava de fachada, e os profetas já alertaram que o coração humano se desvia facilmente.</p>
+
+         
+            <p class="chapter-text">Apocalipse adverte sobre sinais e prodígios falsos que seduzem até os escolhidos. Eu senti o peso da responsabilidade de permanecer alerta e anunciar o engano.</p>
+    <div class="navigation">
+                <button class="nav-btn" onclick="prevChapter()">← Anterior</button>
+                <button class="nav-btn" onclick="nextChapter()">Próximo →</button>
+            </div>
+        </div>
+
+        <div class="chapter" id="chapter-8">
+            <h2>Capítulo 8: A mentira </h2>
+            <p class="chapter-text">Eu caminhei por cidades brilhantes e modernas, onde tudo parecia perfeito: ruas limpas, tecnologia avançada e pessoas sorrindo. Mas minha mente percebeu o que os olhos comuns não viam — uma farsa sutil, uma utopia construída para cegar o coração humano.</p>
+
+            <p class="chapter-text">O profeta Isaías alertou: <strong>“Ai dos que chamam o mal de bem e o bem de mal, que fazem da escuridão luz e da luz escuridão.”</strong> (Isaías 5:20). Eu compreendi que a aparência de perfeição muitas vezes esconde engano e sedução.</p>
+
+            <p class="chapter-text">Enquanto o mundo celebrava sua ordem, vi símbolos e sinais sendo normalizados, passos discretos que conduziam a humanidade a confiar mais nas estruturas humanas do que em Deus. A promessa de uma vida sem dor, sem conflitos, sem dificuldade, parecia tentadora demais para ser verdadeira.</p>
+
+            <p class="chapter-text">Apocalipse me veio à mente: <strong>“E fez a todos, pequenos e grandes, ricos e pobres, livres e escravos, darem a sua marca na mão direita, ou na testa.”</strong> (Apocalipse 13:16). Eu entendi que a utopia é o palco perfeito para o engano, onde o homem aceita sinais sem questionar.</p>
+
+            <p class="chapter-text">Eu continuei a observar, atento aos detalhes e às intenções. Porque a verdadeira liberdade não está em um mundo perfeito aos olhos humanos, mas na obediência ao Senhor e na fidelidade à Sua palavra. Quem não discernir a farsa, caminha para o erro sem perceber.</p>
+
+            <p class="chapter-text">E assim, mantive meu coração vigilante, sabendo que a utopia é uma ilusão temporária, e que a Rocha eterna é o único refúgio seguro em meio à farsa das aparências.</p>
+                        <p class="chapter-text">Eu caminhei por cidades brilhantes, sedutoras, mas meu Espírito percebia a farsa. A utopia é construída para cegar, para fazer a humanidade aceitar sinais e promessas falsas.</p>
+
+            <p class="chapter-text">Isaías disse: <strong>“Ai dos que chamam o mal de bem e o bem de mal.”</strong> (Isaías 5:20). Eu percebi que o mundo moderno repete os mesmos erros, e que a aparência de perfeição esconde a corrupção do coração.</p>
+
+            <p class="chapter-text">Apocalipse alerta sobre a marca da besta, que será aceita por aqueles que não discernem. Eu senti o dever profético de advertir, de despertar a consciência dos fiéis.</p>
+
+      `  <div class="navigation">
+                <button class="nav-btn" onclick="prevChapter()">← Anterior</button>
+                <button class="nav-btn" onclick="nextChapter()">Próximo →</button>
+            </div>
+        </div>
+
+        <div class="chapter" id="chapter-9">
+            <h2>Capítulo 9: O dia do Senhor</h2>
+            <p class="chapter-text">Eu caminhei por ruas silenciosas ao entardecer, refletindo sobre os acontecimentos que se acumulavam diante dos olhos do mundo. Embora a maioria não percebesse, eu via sinais claros de que o julgamento já se aproximava — silencioso, mas inevitável.</p>
+
+            <p class="chapter-text">O profeta Sofonias escreveu: <strong>“O Senhor será terrível contra todos os que oprimem o justo.”</strong> (Sofonias 3:5). Eu compreendi que Deus observa cada ação, mesmo quando ninguém mais percebe, e nada escapa ao Seu olhar.</p>
+
+            <p class="chapter-text">Enquanto governos e líderes celebravam suas vitórias e tratados, eu percebia que o verdadeiro teste da humanidade era espiritual. Cada decisão tomada sem a sabedoria de Deus carregava consequências invisíveis, que se acumulavam como nuvens escuras no horizonte.</p>
+
+            <p class="chapter-text">Apocalipse confirma: <strong>“Vi o céu aberto, e eis um cavalo branco; e o que estava montado nele tinha um arco, e lhe foi dada uma coroa, e saiu vencendo, para vencer.”</strong> (Apocalipse 6:2). Eu entendi que a vitória final não é de quem parece triunfar agora, mas de quem permanece firme na fé.</p>
+
+            <p class="chapter-text">Eu continuei minha vigilância, observando como cada escolha humana, cada pacto e cada símbolo, influencia o destino coletivo. Porque o julgamento pode ser silencioso, mas seu efeito é profundo, e nenhum coração fiel passará despercebido.</p>
+
+            <p class="chapter-text">E assim, segui meu caminho, atento, pronto para alertar e orientar, sabendo que a justiça de Deus é certa, mesmo quando o mundo parece ignorá-la.</p>
+                        <p class="chapter-text">Eu observei como o mundo caminha para o julgamento, silencioso, inevitável. As ações humanas, mesmo que ignoradas, têm consequências espirituais que se acumulam e não passam despercebidas por Deus.</p>
+
+            <p class="chapter-text">Sofonias disse: <strong>“O Senhor será terrível contra todos os que oprimem o justo.”</strong> (Sofonias 3:5). Eu entendi que a justiça divina é certa, mesmo quando o mundo a ignora.</p>
+
+            <p class="chapter-text">Eu senti a urgência de alertar e permanecer firme, porque a hora do juízo se aproxima, e aqueles que não se firmam na Rocha eterna se perderão.</p>
+   <div class="navigation">
+                <button class="nav-btn" onclick="prevChapter()">← Anterior</button>
+                <button class="nav-btn" onclick="nextChapter()">Próximo →</button>
+            </div>
+        </div>
+
+        <div class="chapter" id="chapter-10">
+            <h2>Capítulo 10: A Rocha Eterna</h2>
+           <p class="chapter-text">Eu olhei para o horizonte e senti a certeza de que, apesar de todas as seduções, enganos e falsos sinais, há algo que nunca falha: a Rocha eterna. Enquanto o mundo busca segurança em alianças, tecnologia e símbolos, eu compreendo que a verdadeira proteção está no Senhor.</p>
+
+            <p class="chapter-text">O profeta Salmos escreveu: <strong>“O Senhor é a minha rocha, a minha fortaleza e o meu libertador.”</strong> (Salmos 18:2). Eu percebi que toda torre humana, todo tratado ou estrutura grandiosa, é pó diante da Rocha que sustenta o universo.</p>
+
+            <p class="chapter-text">Enquanto observo o movimento do mundo, sei que muitos serão seduzidos, mas também sei que aqueles que buscam discernimento, vigilância e fé permanecerão firmes. Apocalipse confirma: <strong>“E a cidade não precisará de sol nem de lua, porque a glória de Deus a ilumina, e o Cordeiro é a sua lâmpada.”</strong> (Apocalipse 21:23).</p>
+
+            <p class="chapter-text">Eu compreendo que o fim das provas humanas não é para punir, mas para revelar a verdade. Toda aliança feita sem Deus, toda utopia construída sem fé, não resistirá. Mas quem permanece na Rocha, mesmo em meio à tempestade, não será abalado.</p>
+
+            <p class="chapter-text">E assim concluo minha jornada de vigilância e aprendizado: os sinais estão por toda parte, o engano se apresenta sutilmente, mas a verdade permanece. A Rocha eterna não muda, não falha e não engana. E eu continuo firme, para testemunhar e alertar aqueles que desejam enxergar.</p>
+
+            <p class="chapter-text">Porque ao final, a aliança que verdadeiramente importa não é humana, mas divina, e só nela encontramos paz, segurança e vida eterna.</p>
+                        <p class="chapter-text">Eu olhei para o horizonte e senti a segurança da Rocha eterna. Nada das torres humanas, tratados ou símbolos enganosos pode se comparar à força que Deus oferece aos fiéis.</p>
+
+            <p class="chapter-text">Salmos diz: <strong>“O Senhor é a minha rocha, a minha fortaleza e o meu libertador.”</strong> (Salmos 18:2). Eu percebi que a verdadeira proteção é espiritual, firme, inabalável.</p>
+
+            <p class="chapter-text">Mesmo diante da tentação do Anticristo e do engano das multidões, eu compreendi que permanecer fiel à Rocha eterna é a única garantia de vida e vitória. E eu continuo firme, para testemunhar, alertar e conduzir os corações atentos à verdade.</p>
+   <div class="navigation">
+                <button class="nav-btn" onclick="prevChapter()">← Anterior</button>
+                <button class="nav-btn" onclick="showChapter(0)">Voltar ao Início</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Chatbot -->
+    <button class="chatbot-toggle" onclick="toggleChatbot()">💬</button>
+    <div class="chatbot" id="chatbot">
+        <div class="chatbot-header">
+            💬 Pergunte ao Livro
+        </div>
+        <div class="chatbot-messages" id="chatMessages">
+            <div class="message bot">Olá! Sou seu assistente virtual. Posso responder perguntas sobre o conteúdo do livro. O que gostaria de saber?</div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatInput" placeholder="Digite sua pergunta..." onkeypress="handleChatKeyPress(event)">
+            <button onclick="sendMessage()">Enviar</button>
+        </div>
+        <div class="edit-mode" id="editMode" style="display: none;">
+            <h5>✏️Editar Respostas</h5>
+            <textarea id="editTextarea" placeholder="Digite as perguntas e respostas (uma por linha)"></textarea>
+            <button onclick="saveCustomResponses()">Salvar</button>
+            <button onclick="toggleEditMode()">Cancelar</button>
+        </div>
+        <button onclick="toggleEditMode()" style="margin: 1rem; background: #f39c12; color: white; border: none; padding: 0.5rem; border-radius: 8px; cursor: pointer;">✏️ Editar</button>
+    </div>
+
+    <script>
+        // Estado global da aplicação
+        let currentChapter = 0;
+        let isSpeaking = false;
+        let speechSynthesis = window.speechSynthesis;
+        let currentUtterance = null;
+        let speechPosition = 0;
+        let currentText = '';
+        let sentences = [];
+        let currentSentenceIndex = 0;
+
+        // Configurações de TTS
+        let speechRate = 1;
+        let speechPitch = 1;
+
+        // Chatbot
+        let chatbotOpen = false;
+        let customResponses = {};
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTheme();
+            loadCustomResponses();
+            updateProgress();
+            setupTTSControls();
+            
+            // Event listeners para navegação por teclado
+            document.addEventListener('keydown', handleKeyNavigation);
+            
+            // Event listener para scroll
+            window.addEventListener('scroll', updateProgress);
+            
+            // Carregar progresso salvo
+            const savedChapter = localStorage.getItem('currentChapter');
+            if (savedChapter) {
+                showChapter(parseInt(savedChapter));
+            }
+        });
+
+        // Navegação por teclado
+        function handleKeyNavigation(event) {
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            switch(event.key) {
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    prevChapter();
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    nextChapter();
+                    break;
+                case 'Escape':
+                    closeSidebar();
+                    break;
+                case ' ':
+                    event.preventDefault();
+                    toggleTTS();
+                    break;
+            }
+        }
+
+        // Controle do sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('open');
+        }
+
+        // Navegação entre capítulos
+        function showChapter(chapterIndex) {
+            // Parar TTS se estiver ativo
+            if (isSpeaking) {
+                stopTTS();
+            }
+            
+            // Esconder capítulo atual
+            const currentChapterEl = document.querySelector('.chapter.active');
+            if (currentChapterEl) {
+                currentChapterEl.classList.remove('active');
+            }
+            
+            // Mostrar novo capítulo
+            const newChapter = document.getElementById(`chapter-${chapterIndex}`);
+            if (newChapter) {
+                newChapter.classList.add('active');
+                currentChapter = chapterIndex;
+                
+                // Atualizar links do TOC
+                document.querySelectorAll('.chapter-link').forEach((link, index) => {
+                    link.classList.toggle('active', index === chapterIndex);
+                });
+                
+                // Salvar progresso
+                localStorage.setItem('currentChapter', chapterIndex);
+                
+                // Scroll para o topo
+                window.scrollTo(0, 0);
+                
+                // Fechar sidebar em mobile
+                closeSidebar();
+                
+                // Resetar posição de fala
+                speechPosition = 0;
+                currentSentenceIndex = 0;
+            }
+        }
+
+        function nextChapter() {
+            if (currentChapter < 10) {
+                showChapter(currentChapter + 1);
+            }
+        }
+
+        function prevChapter() {
+            if (currentChapter > 0) {
+                showChapter(currentChapter - 1);
+            }
+        }
+
+        // Sistema de Text-to-Speech
+        function setupTTSControls() {
+            const speedControl = document.getElementById('speedControl');
+            const pitchControl = document.getElementById('pitchControl');
+            const speedValue = document.getElementById('speedValue');
+            const pitchValue = document.getElementById('pitchValue');
+
+            speedControl.addEventListener('input', function() {
+                speechRate = parseFloat(this.value);
+                speedValue.textContent = speechRate.toFixed(1) + 'x';
+            });
+
+            pitchControl.addEventListener('input', function() {
+                speechPitch = parseFloat(this.value);
+                pitchValue.textContent = speechPitch.toFixed(1);
+            });
+        }
+
+        function toggleTTS() {
+            if (isSpeaking) {
+                stopTTS();
+            } else {
+                startTTS();
+            }
+        }
+
+        function startTTS() {
+            const activeChapter = document.querySelector('.chapter.active');
+            if (!activeChapter) return;
+
+            // Obter texto do capítulo (excluindo navegação)
+            const textElements = activeChapter.querySelectorAll('p, h2');
+            currentText = Array.from(textElements).map(el => el.textContent).join('. ');
+            
+            // Dividir em sentenças
+            sentences = currentText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            
+            if (sentences.length === 0) return;
+
+            isSpeaking = true;
+            document.getElementById('ttsBtn').textContent = '⏸️ Pausar';
+            
+            speakFromCurrentPosition();
+        }
+
+        function speakFromCurrentPosition() {
+            if (currentSentenceIndex >= sentences.length) {
+                stopTTS();
+                return;
+            }
+
+            const sentence = sentences[currentSentenceIndex].trim();
+            if (!sentence) {
+                currentSentenceIndex++;
+                speakFromCurrentPosition();
+                return;
+            }
+
+            currentUtterance = new SpeechSynthesisUtterance(sentence);
+            currentUtterance.rate = speechRate;
+            currentUtterance.pitch = speechPitch;
+            currentUtterance.lang = 'pt-BR';
+
+            // Destacar texto sendo lido
+            highlightCurrentSentence(sentence);
+
+            currentUtterance.onend = function() {
+                currentSentenceIndex++;
+                if (isSpeaking) {
+                    setTimeout(() => speakFromCurrentPosition(), 100);
+                }
+            };
+
+            currentUtterance.onerror = function() {
+                console.log('Erro na síntese de voz');
+                stopTTS();
+            };
+
+            speechSynthesis.speak(currentUtterance);
+        }
+
+        function stopTTS() {
+            isSpeaking = false;
+            speechSynthesis.cancel();
+            document.getElementById('ttsBtn').textContent = '🔊 Ouvir';
+            
+            // Remover destaques
+            removeHighlights();
+        }
+
+        function highlightCurrentSentence(sentence) {
+            removeHighlights();
+            
+            const activeChapter = document.querySelector('.chapter.active');
+            if (!activeChapter) return;
+
+            const walker = document.createTreeWalker(
+                activeChapter,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let node;
+            while (node = walker.nextNode()) {
+                const text = node.textContent;
+                if (text.includes(sentence.substring(0, 20))) {
+                    const parent = node.parentElement;
+                    if (parent && parent.tagName !== 'SCRIPT' && parent.tagName !== 'STYLE') {
+                        parent.classList.add('highlight');
+                        parent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        break;
+                    }
+                }
+            }
+        }
+
+        function removeHighlights() {
+            document.querySelectorAll('.highlight').forEach(el => {
+                el.classList.remove('highlight');
+            });
+        }
+
+        // Sistema de temas
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            localStorage.setItem('darkTheme', isDark);
+        }
+
+        function loadTheme() {
+            const isDark = localStorage.getItem('darkTheme') === 'true';
+            if (isDark) {
+                document.body.classList.add('dark');
+            }
+        }
+
+        // Compartilhamento
+        async function shareChapter() {
+            const chapterTitle = document.querySelector('.chapter.active h2')?.textContent || 'Audiobook Interativo';
+            
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: chapterTitle,
+                        text: 'Confira este capítulo do audiobook interativo!',
+                        url: window.location.href
+                    });
+                } catch (err) {
+                    console.log('Erro ao compartilhar:', err);
+                }
+            } else {
+                // Fallback para navegadores sem Web Share API
+                const url = window.location.href;
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('Link copiado para a área de transferência!');
+                });
+            }
+        }
+
+        // Barra de progresso
+        function updateProgress() {
+            const activeChapter = document.querySelector('.chapter.active');
+            if (!activeChapter) return;
+
+            const rect = activeChapter.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const documentHeight = activeChapter.offsetHeight;
+            
+            let progress = 0;
+            if (rect.top < 0) {
+                progress = Math.min(100, (Math.abs(rect.top) / (documentHeight - windowHeight)) * 100);
+            }
+            
+            document.getElementById('readingProgress').value = progress;
+        }
+
+        // Chatbot
+        function toggleChatbot() {
+            const chatbot = document.getElementById('chatbot');
+            chatbotOpen = !chatbotOpen;
+            chatbot.classList.toggle('open', chatbotOpen);
+            
+            if (chatbotOpen) {
+                document.getElementById('chatInput').focus();
+            }
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Simular resposta do bot
+            setTimeout(() => {
+                const response = getBotResponse(message);
+                addMessage(response, 'bot');
+            }, 500);
+        }
+
+        function addMessage(text, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.textContent = text;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function getBotResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Verificar respostas customizadas primeiro
+            for (const [key, value] of Object.entries(customResponses)) {
+                if (lowerMessage.includes(key.toLowerCase())) {
+                    return value;
+                }
+            }
+            
+            // Respostas padrão
+            if (lowerMessage.includes('capítulo') || lowerMessage.includes('capitulo')) {
+                return `Atualmente você está no ${getCurrentChapterName()}. Use as setas do teclado ou o menu lateral para navegar entre os capítulos.`;
+            }
+            
+            if (lowerMessage.includes('áudio') || lowerMessage.includes('audio') || lowerMessage.includes('voz')) {
+                return 'Você pode usar o botão "🔊 Ouvir" para ativar a leitura em voz alta. Use os controles para ajustar velocidade e tom da voz.';
+            }
+            
+            if (lowerMessage.includes('tema') || lowerMessage.includes('escuro') || lowerMessage.includes('claro')) {
+                return 'Use o botão "🌙 Tema" no cabeçalho para alternar entre tema claro e escuro. Sua preferência será salva automaticamente.';
+            }
+            
+            if (lowerMessage.includes('compartilhar') || lowerMessage.includes('share')) {
+                return 'Use o botão "📤 Compartilhar" para compartilhar o capítulo atual com outras pessoas através das opções nativas do seu dispositivo.';
+            }
+            
+            if (lowerMessage.includes('progresso') || lowerMessage.includes('onde parei')) {
+                return 'Seu progresso é salvo automaticamente. A barra no topo mostra o progresso de leitura do capítulo atual.';
+            }
+            
+            return 'Interessante pergunta! Posso ajudar com informações sobre navegação, áudio, temas, compartilhamento e outras funcionalidades do audiobook. O que mais gostaria de saber?';
+        }
+
+        function getCurrentChapterName() {
+            const chapterNames = [
+                'Capa do Livro',
+                'Capítulo 1: Introdução',
+                'Capítulo 2: Fundamentos', 
+                'Capítulo 3: Vídeo Explicativo',
+                'Capítulo 4: Desenvolvimento',
+                'Capítulo 5: Práticas',
+                'Capítulo 6: Recursos Avançados',
+                'Capítulo 7: Implementação',
+                'Capítulo 8: Otimização',
+                'Capítulo 9: Testes',
+                'Capítulo 10: Conclusão'
+            ];
+            return chapterNames[currentChapter] || 'Capítulo Desconhecido';
+        }
+
+        function toggleEditMode() {
+            const editMode = document.getElementById('editMode');
+            const isVisible = editMode.style.display !== 'none';
+            editMode.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                // Carregar respostas atuais no textarea
+                const textarea = document.getElementById('editTextarea');
+                let content = '';
+                for (const [key, value] of Object.entries(customResponses)) {
+                    content += `P: ${key}\nR: ${value}\n\n`;
+                }
+                textarea.value = content;
+            }
+        }
+
+        function saveCustomResponses() {
+            const textarea = document.getElementById('editTextarea');
+            const content = textarea.value;
+            const lines = content.split('\n');
+            
+            customResponses = {};
+            let currentQuestion = '';
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (line.startsWith('P:')) {
+                    currentQuestion = line.substring(2).trim();
+                } else if (line.startsWith('R:') && currentQuestion) {
+                    customResponses[currentQuestion] = line.substring(2).trim();
+                    currentQuestion = '';
+                }
+            }
+            
+            localStorage.setItem('customResponses', JSON.stringify(customResponses));
+            toggleEditMode();
+            addMessage('Respostas personalizadas salvas com sucesso!', 'bot');
+        }
+
+        function loadCustomResponses() {
+            const saved = localStorage.getItem('customResponses');
+            if (saved) {
+                customResponses = JSON.parse(saved);
+            }
+        }
+    
+    if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('✅ Service Worker registrado', reg))
+        .catch(err => console.error('❌ Erro ao registrar o SW:', err));
+    });
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9902575647c6f610',t:'MTc2MDczMDc5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
