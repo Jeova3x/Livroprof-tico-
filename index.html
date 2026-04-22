@@ -857,8 +857,91 @@
             }
         }
 </script>
-    <script>
-  
+    
+  <script>
+/* Isola o código para evitar conflitos com variáveis/funções existentes */
+(function(window, document){
+  const NAMESPACE = 'AudiobookData';
+
+  // evita sobrescrever se já existir (por segurança)
+  if (window[NAMESPACE]) return;
+
+  window[NAMESPACE] = {
+    loaded: false,
+    chapters: [],
+    meta: {}
+  };
+
+  async function loadChaptersJson(url = 'chapters.json') {
+    try {
+      const res = await fetch(url, {cache: 'no-cache'});
+      if (!res.ok) {
+        console.warn('Audiobook JSON não encontrado:', res.status);
+        return;
+      }
+      const data = await res.json();
+      // validação mínima
+      if (!data || !Array.isArray(data.chapters)) {
+        console.warn('Formato inválido do JSON de capítulos');
+        return;
+      }
+      window[NAMESPACE].loaded = true;
+      window[NAMESPACE].chapters = data.chapters;
+      window[NAMESPACE].meta = { title: data.title || '', author: data.author || '' };
+
+      // callback opcional: se seu código existente expõe uma função para reinicializar UI, invoque-a aqui.
+      // Exemplo: if (typeof window.refreshAudiobookUI === 'function') window.refreshAudiobookUI(data);
+      // Se não houver callback, este script apenas disponibiliza os dados para o código atual usar.
+
+      // Exemplo de integração não intrusiva: procura elementos padrão e injeta conteúdo somente se estiverem vazios
+      safeInjectDefaultUI(data);
+    } catch (err) {
+      console.error('Erro ao carregar chapters.json:', err);
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+      .replaceAll('"','&quot;').replaceAll("'",'&#39;');
+  }
+
+  // Injeção mínima e condicional para não sobrescrever conteúdo existente
+  function safeInjectDefaultUI(data) {
+    try {
+      // exemplo: títulos com ids #book-title, #book-author, container #chapters
+      const titleEl = document.getElementById('book-title');
+      if (titleEl && !titleEl.textContent.trim() && data.title) {
+        titleEl.textContent = data.title;
+      }
+      const authorEl = document.getElementById('book-author');
+      if (authorEl && !authorEl.textContent.trim() && data.author) {
+        authorEl.textContent = data.author;
+      }
+
+      const chaptersContainer = document.getElementById('chapters');
+      if (chaptersContainer && chaptersContainer.children.length === 0) {
+        data.chapters.forEach(ch => {
+          const art = document.createElement('article');
+          art.className = 'chapter';
+          art.dataset.id = ch.id ?? '';
+          art.innerHTML = '<h2>' + escapeHtml(ch.title) + '</h2>'
+                        + '<div class="chapter-text">' + escapeHtml(ch.text) + '</div>';
+          chaptersContainer.appendChild(art);
+        });
+      }
+    } catch (e) {
+      console.warn('safeInjectDefaultUI falhou:', e);
+    }
+  }
+
+  // Inicia carregamento de forma assíncrona, sem bloquear o restante do app
+  // Chame loadChaptersJson() manualmente se precisar controlar quando carregar
+  loadChaptersJson();
+
+})(window, document);
+
+    
     </script>
 <script>
     if ('serviceWorker' in navigator) {
