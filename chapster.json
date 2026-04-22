@@ -1,0 +1,15 @@
+{
+  "title": "Meu Audiobook",
+  "author": "Autor Exemplo",
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "Capítulo 1: Os Sete Selos",
+      "paragraphs": [
+        "Depois que o Cordeiro abriu o sétimo selo e o silêncio se estabeleceu nos céus, eu senti que algo estava prestes a acontecer. A quietude não era ausência, mas preparação. Vi sete anjos diante de Deus, e a cada um deles foi dada uma trombeta. (Apocalipse capítulo 8 versículo 2) Meu coração compreendeu: o silêncio antecede o som do juízo, e o toque das trombetas é a resposta de Deus ao clamor dos justos que aguardam a justiça.",
+        "Então outro anjo veio e colocou incenso sobre o altar de ouro diante do trono, e as orações dos santos subiram diante de Deus. (Apocalipse capítulo 8 versículo 3 e 4) Eu percebi que nada do que oramos se perde. Cada lágrima, cada clamor sincero é guardado no altar celestial. Quando o anjo lançou o incensário à terra, houve trovões, relâmpagos e terremoto. Entendi que o mover de Deus no céu sempre provoca abalos na terra.",
+        "... (outros parágrafos aqui) ..."
+      ]
+    }
+  ]
+}
