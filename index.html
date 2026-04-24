@@ -416,7 +416,48 @@
         <button onclick="toggleEditMode()" style="margin: 1rem; background: #f39c12; color: white; border: none; padding: 0.5rem; border-radius: 8px; cursor: pointer;">✏️ Editar</button>
     </div>
 
-    <script>
+
+
+    
+    
+    <div class="container">
+    <h2>📚 Audiobook Firebase</h2>
+    
+    <!-- ID USUÁRIO (SEM LOGIN - APENAS ID LOCAL) -->
+    <div class="input-group">
+      <label>👤 ID do Usuário</label>
+      <input type="text" id="userId" value="demo_user_123" placeholder="Digite seu ID único">
+    </div>
+    
+    <button onclick="inicializarFirebase()" id="btnInit">🔥 Conectar Firebase</button>
+    
+    <!-- PLAYER -->
+    <div class="player-container">
+      <div class="input-group">
+        <label>📖 ID do Audiobook</label>
+        <input type="text" id="audiobookId" value="livro_demo_001" placeholder="ID do audiobook">
+      </div>
+      
+      <audio id="player" controls preload="metadata">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+        Áudio não suportado.
+      </audio>
+      
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+    
+    <!-- STATUS -->
+    <div class="stats" id="stats">
+      <div>⏳ Aguardando conexão...</div>
+    </div>
+    
+    <button onclick="carregarLista()" id="btnLista">📋 Meus Audiobooks</button>
+    <div id="lista" class="lista" style="display: none;"></div>
+  </div>
+
+  
         // Estado global da aplicação
         let currentChapter = 0;
         let isSpeaking = false;
