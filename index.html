@@ -917,15 +917,18 @@ function initFirebaseAudiobook(configFirebase, userId = 'anonimo') {
 }
 
 // === COMO USAR (adicione após a função acima) ===
-const configFirebase = {
-  apiKey: "sua-api-key-aqui",
-  authDomain: "seu-projeto.firebaseapp.com",
-  projectId: "seu-projeto-id",
-  storageBucket: "seu-projeto.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "sua-app-id"
+const firebaseConfig = {
+  apiKey: "AIzaSyDAYD7DhRovj0PYHUSpOq5YE1rQXIiOPkc",
+  authDomain: "chat-trader.firebaseapp.com",
+  databaseURL: "https://chat-trader-default-rtdb.firebaseio.com",
+  projectId: "chat-trader",
+  storageBucket: "chat-trader.firebasestorage.app",
+  messagingSenderId: "722204996123",
+  appId: "1:722204996123:web:6ab7fd6a6b5646c3e0bebe",
+  measurementId: "G-N36TE38K29"
 };
 
+        
 // INICIALIZA (execute uma vez)
 initFirebaseAudiobook(configFirebase, 'meu_usuario_123');
 
