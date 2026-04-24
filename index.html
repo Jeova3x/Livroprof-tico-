@@ -857,6 +857,101 @@
             }
         }
 
+        
+// === FUNÇÃO COMPLETA FIREBASE AUDIOBOOK (COPIE E COLE) ===
+function initFirebaseAudiobook(configFirebase, userId = 'anonimo') {
+  // Inicializa Firebase
+  firebase.initializeApp(configFirebase);
+  const db = firebase.firestore();
+
+  // Funções principais
+  window.firebaseAudiobook = {
+    
+    // Salva progresso
+    salvarProgresso: async (audiobookId, progresso, duracaoTotal) => {
+      try {
+        const data = {
+          userId: userId,
+          audiobookId: audiobookId,
+          progresso: progresso,
+          duracaoTotal: duracaoTotal,
+          percentual: Math.round((progresso / duracaoTotal) * 100),
+          ultimaAtualizacao: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection('progresso_audiobooks')
+          .doc(`${userId}_${audiobookId}`)
+          .set(data, { merge: true });
+        return { success: true };
+      } catch (e) {
+        return { success: false, error: e.message };
+      }
+    },
+
+    // Carrega progresso
+    carregarProgresso: async (audiobookId) => {
+      try {
+        const doc = await db.collection('progresso_audiobooks')
+          .doc(`${userId}_${audiobookId}`).get();
+        return doc.exists ? doc.data() : null;
+      } catch (e) {
+        return null;
+      }
+    },
+
+    // Lista todos audiobooks
+    listarAudiobooks: async () => {
+      try {
+        const snapshot = await db.collection('progresso_audiobooks')
+          .where('userId', '==', userId)
+          .orderBy('ultimaAtualizacao', 'desc')
+          .get();
+        return snapshot.docs.map(d => d.data());
+      } catch (e) {
+        return [];
+      }
+    }
+  };
+
+  console.log('✅ Firebase Audiobook inicializado!');
+}
+
+// === COMO USAR (adicione após a função acima) ===
+const configFirebase = {
+  apiKey: "sua-api-key-aqui",
+  authDomain: "seu-projeto.firebaseapp.com",
+  projectId: "seu-projeto-id",
+  storageBucket: "seu-projeto.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "sua-app-id"
+};
+
+// INICIALIZA (execute uma vez)
+initFirebaseAudiobook(configFirebase, 'meu_usuario_123');
+
+// === EXEMPLO COM PLAYER ===
+const audio = document.querySelector('audio');
+
+// Salva a cada 10s
+setInterval(() => {
+  if (!isNaN(audio.duration)) {
+    window.firebaseAudiobook.salvarProgresso(
+      'audiobook_001', 
+      audio.currentTime, 
+      audio.duration
+    );
+  }
+}, 10000);
+
+// Carrega progresso inicial
+audio.addEventListener('loadedmetadata', async () => {
+  const progresso = await window.firebaseAudiobook.carregarProgresso('audiobook_001');
+  if (progresso) {
+    audio.currentTime = progresso.progresso;
+    console.log(`📖 Carregado: ${progresso.percentual}%`);
+  }
+});
+
+        
     if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('service-worker.js')
