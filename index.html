@@ -419,12 +419,14 @@
 
 
     
-    <!-- CAMPO DE COMENTÁRIOS -->
-<textarea id="commentInput" placeholder="Digite seu comentário..." rows="3" maxlength="500"></textarea>
-<button onclick="saveComment()">💾 Salvar Comentário</button>
-<div id="commentStatus"></div>
-<div id="lastComment" style="margin-top: 10px; padding: 10px; background: #f0f0f0; border-radius: 5px;"></div>
-    
+<!-- CAMPO COMENTÁRIOS FUNCIONAL -->
+<div style="margin: 20px 0;">
+  <textarea id="commentText" placeholder="Seu comentário (máx 500 chars)" 
+            rows="4" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;"></textarea>
+  <br><button onclick="salvarComentario()" style="margin:10px 0; padding:8px 16px; background:#4285f4; color:white; border:none; border-radius:5px;">Salvar</button>
+  <div id="commentMsg" style="color:#4285f4; font-weight:bold;"></div>
+  <div id="ultimoComentario" style="margin-top:10px; padding:10px; background:#f5f5f5; border-radius:5px; min-height:20px;"></div>
+</div>
 
   <script>
         // Estado global da aplicação
@@ -967,26 +969,7 @@ audio.addEventListener('loadedmetadata', async () => {
 
 
       
-    // Salvar comentário
-async function saveComment() {
-  const comment = document.getElementById('commentInput').value.trim();
-  if (!comment) return;
-  
-  await db.collection('comentarios')
-    .doc(`${userId}_${bookId}`)
-    .set({ comentario: comment, data: firebase.firestore.FieldValue.serverTimestamp() });
-  
-  document.getElementById('commentStatus').textContent = '✅ Salvo!';
-  document.getElementById('commentInput').value = '';
-}
 
-// Carregar comentário
-async function loadComment() {
-  const doc = await db.collection('comentarios').doc(`${userId}_${bookId}`).get();
-  if (doc.exists) {
-    document.getElementById('lastComment').textContent = doc.data().comentario;
-  }
-        }
         
     if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
