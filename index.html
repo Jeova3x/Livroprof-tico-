@@ -419,15 +419,16 @@
 
 
     
-<!-- CAMPO COMENTÁRIOS FUNCIONAL -->
+<!-- CORRIGIDO - NÃO TRAVA -->
 <div style="margin: 20px 0;">
-  <textarea id="commentText" placeholder="Seu comentário (máx 500 chars)" 
-            rows="4" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;"></textarea>
-  <br><button onclick="salvarComentario()" style="margin:10px 0; padding:8px 16px; background:#4285f4; color:white; border:none; border-radius:5px;">Salvar</button>
-  <div id="commentMsg" style="color:#4285f4; font-weight:bold;"></div>
-  <div id="ultimoComentario" style="margin-top:10px; padding:10px; background:#f5f5f5; border-radius:5px; min-height:20px;"></div>
+  <textarea id="commentText" placeholder="Seu comentário (Enter para enviar)" 
+            rows="3" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:5px;"
+            onkeypress="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();salvarComentario();}"></textarea>
+  <button onclick="salvarComentario()" style="margin:10px 0; padding:10px 20px; background:#25D366; color:white; border:none; border-radius:5px; cursor:pointer;">💬 Salvar</button>
+  <div id="msg" style="color:green; font-weight:bold; margin:5px 0;"></div>
+  <div id="comentarioAtual" style="padding:10px; background:#e8f5e8; border-radius:5px; min-height:20px; white-space:pre-wrap;"></div>
 </div>
-
+    
   <script>
         // Estado global da aplicação
         let currentChapter = 0;
@@ -968,8 +969,64 @@ audio.addEventListener('loadedmetadata', async () => {
 });
 
 
-      
+  </script>
+    <script>
+        // FUNÇÃO CORRIGIDA - NÃO TRAVA
+async function salvarComentario() {
+  const textarea = document.getElementById('commentText');
+  const texto = textarea.value.trim();
+  
+  if (!texto) {
+    document.getElementById('msg').textContent = 'Digite algo!';
+    return;
+  }
+  
+  // MOSTRA CARREGANDO
+  document.getElementById('msg').textContent = 'Salvando...';
+  
+  try {
+    const userId = document.getElementById('userId').value || 'anon';
+    const bookId = document.getElementById('bookId').value || 'book1';
+    const docId = userId + '_' + bookId;
+    
+    await db.collection('comentarios').doc(docId).set({
+      texto: texto,
+      data: new Date().toISOString()
+    });
+    
+    // LIMPA E ATUALIZA
+    textarea.value = '';
+    document.getElementById('msg').textContent = '✅ Salvo!';
+    document.getElementById('comentarioAtual').textContent = texto;
+    
+    // LIMPA MENSAGEM EM 2s
+    setTimeout(() => {
+      document.getElementById('msg').textContent = '';
+    }, 2000);
+    
+  } catch(error) {
+    console.error('Erro:', error);
+    document.getElementById('msg').textContent = '❌ Erro de conexão';
+  }
+}
 
+// CARREGA AO INICIAR
+async function carregarComentario() {
+  try {
+    const userId = document.getElementById('userId').value || 'anon';
+    const bookId = document.getElementById('bookId').value || 'book1';
+    const docId = userId + '_' + bookId;
+    
+    const doc = await db.collection('comentarios').doc(docId).get();
+    if (doc.exists) {
+      document.getElementById('comentarioAtual').textContent = doc.data().texto;
+    }
+  } catch(e) {
+    console.error(e);
+  }
+}
+        </script>
+<script>
         
     if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
