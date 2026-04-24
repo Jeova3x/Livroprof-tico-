@@ -965,6 +965,28 @@ audio.addEventListener('loadedmetadata', async () => {
   }
 });
 
+
+      
+    // Salvar comentário
+async function saveComment() {
+  const comment = document.getElementById('commentInput').value.trim();
+  if (!comment) return;
+  
+  await db.collection('comentarios')
+    .doc(`${userId}_${bookId}`)
+    .set({ comentario: comment, data: firebase.firestore.FieldValue.serverTimestamp() });
+  
+  document.getElementById('commentStatus').textContent = '✅ Salvo!';
+  document.getElementById('commentInput').value = '';
+}
+
+// Carregar comentário
+async function loadComment() {
+  const doc = await db.collection('comentarios').doc(`${userId}_${bookId}`).get();
+  if (doc.exists) {
+    document.getElementById('lastComment').textContent = doc.data().comentario;
+  }
+        }
         
     if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
